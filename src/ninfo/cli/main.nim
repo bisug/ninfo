@@ -67,7 +67,7 @@ proc ninfoMain*(args: seq[string] = commandLineParams()): int =
     stderr.writeLine("Try 'ninfo --help' for usage.")
     return exitUsage
   except CatchableError as e:
-    # Collectors raise NinfoError when data is unavailable; anything else
-    # is a bug but we still exit cleanly without a stack trace.
+    # Collectors degrade missing data to Option.none; reaching here means
+    # a collection path failed outright. Exit cleanly without a trace.
     stderr.writeLine("ninfo: " & e.msg)
     return exitRuntime

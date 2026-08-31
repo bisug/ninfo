@@ -30,21 +30,21 @@ proc freeifaddrs*(ifa: ptr Ifaddrs)
 
 proc sockAddrToString*(saPtr: ptr SockAddr): Option[string] =
   ## Convert a sockaddr to a printable IP address via inet_ntop.
+  ## Returns None for non-IP families (AF_PACKET etc.).
   if saPtr.isNil:
     return none(string)
-  case saPtr.sa_family.int
-  of AF_INET:
-    var buf: array[46, char]
-    let sa = cast[ptr Sockaddr_in](saPtr)
-    let res = inet_ntop(AF_INET, addr sa.sin_addr, cast[cstring](buf[0].addr), buf.len.int32)
-    if not res.isNil: some($res) else: none(string)
-  of AF_INET6:
-    var buf: array[46, char]
-    let sa = cast[ptr Sockaddr_in6](saPtr)
-    let res = inet_ntop(AF_INET6, addr sa.sin6_addr, cast[cstring](buf[0].addr), buf.len.int32)
-    if not res.isNil: some($res) else: none(string)
-  else:
-    none(string)
+  var buf: array[46, char]
+  let family = saPtr.sa_family.int
+  let res =
+    if family == AF_INET:
+      let sa = cast[ptr Sockaddr_in](saPtr)
+      inet_ntop(AF_INET, addr sa.sin_addr, cast[cstring](buf[0].addr), buf.len.int32)
+    elif family == AF_INET6:
+      let sa = cast[ptr Sockaddr_in6](saPtr)
+      inet_ntop(AF_INET6, addr sa.sin6_addr, cast[cstring](buf[0].addr), buf.len.int32)
+    else:
+      return none(string)
+  if not res.isNil: some($res) else: none(string)
 
 proc macFromIfaddrs*(name: string): Option[string] =
   ## Read a MAC address from /sys/class/net/<name>/address.
@@ -95,35 +95,35 @@ proc collectNetwork*(): NetworkInfo =
     return info
 
   # Aggregate addresses per interface name, preserving first-seen order.
+  # byName holds pointers into the sequence so updates need no copy.
   var order: seq[string] = @[]
-  var byName = initTable[string, InterfaceInfo]()
+  var byName = initTable[string, int]()
 
   var cur = ifap
   while not cur.isNil:
     let name = $cur.ifa_name
     if name notin byName:
       order.add(name)
+      byName[name] = info.interfaces.len
       var iface: InterfaceInfo
       iface.name = name
-      iface.isLoopback = name == "lo"
       # IFF_UP = 0x1, IFF_LOOPBACK = 0x8
       iface.isUp = (cur.ifa_flags and 0x1) != 0
       iface.isLoopback = (cur.ifa_flags and 0x8) != 0
-      byName[name] = iface
-    var iface = byName[name]
-    let addrStr = sockAddrToString(cur.ifa_addr)
-    if addrStr.isSome:
-      if cur.ifa_addr.sa_family.int == AF_INET and iface.ipv4.isNone:
-        iface.ipv4 = addrStr
-      elif cur.ifa_addr.sa_family.int == AF_INET6 and iface.ipv6.isNone:
-        iface.ipv6 = addrStr
-    byName[name] = iface
+      info.interfaces.add(iface)
+    let idx = byName[name]
+    let family = if cur.ifa_addr.isNil: -1 else: cur.ifa_addr.sa_family.int
+    if family == AF_INET or family == AF_INET6:
+      let addrStr = sockAddrToString(cur.ifa_addr)
+      if addrStr.isSome:
+        if family == AF_INET and info.interfaces[idx].ipv4.isNone:
+          info.interfaces[idx].ipv4 = addrStr
+        elif family == AF_INET6 and info.interfaces[idx].ipv6.isNone:
+          info.interfaces[idx].ipv6 = addrStr
     cur = cur.ifa_next
 
   freeifaddrs(ifap)
 
   for name in order:
-    var iface = byName[name]
-    iface.macAddress = macFromIfaddrs(name)
-    info.interfaces.add(iface)
+    info.interfaces[byName[name]].macAddress = macFromIfaddrs(name)
   info

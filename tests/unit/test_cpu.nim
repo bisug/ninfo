@@ -5,23 +5,24 @@ import ninfo/hardware/cpu
 
 suite "parseCpuinfo":
   test "parses model name":
-    let t = parseCpuinfo()
+    let (t, _) = parseCpuinfo()
     check "model name" in t
     check t["model name"].len > 0
   test "keys are stripped":
     # The parser must strip whitespace around the colon.
-    let t = parseCpuinfo()
+    let (t, _) = parseCpuinfo()
     for k in t.keys:
       check k == k.strip()
+  test "logical cores from processor lines":
+    let (_, logical) = parseCpuinfo()
+    check logical.isSome
+    check logical.get > 0
 
 suite "countPhysicalCores":
-  test "matches logical cores when no SMT":
-    # On a machine without hyperthreading physical == logical; with SMT
-    # physical < logical. Either way both must be positive and physical
-    # must not exceed logical.
+  test "positive when cpuinfo has processors":
     let phys = countPhysicalCores()
-    let t = parseCpuinfo()
-    if "processor" in readFile("/proc/cpuinfo"):
+    let (_, logical) = parseCpuinfo()
+    if logical.isSome:
       check phys.isSome
       check phys.get > 0
 
