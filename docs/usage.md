@@ -64,8 +64,8 @@ tmpfs, ...) are excluded.
 ```
 Storage
   Filesystem        Size      Used     Avail   Use%  Mounted on
-  /dev/nvme0n1p2     931.5 GiB  412.7 GiB  471.9 GiB  46.6%  /
-  /dev/nvme0n1p1     600.0 MiB   199.0 MiB 401.0 MiB   33.2%  /boot/efi
+  /dev/nvme0n1p2  931.5 GiB 412.7 GiB 471.9 GiB  46.6%  /
+  /dev/nvme0n1p1  600.0 MiB 199.0 MiB 401.0 MiB  33.2%  /boot/efi
 ```
 
 ### `ninfo network`
@@ -149,7 +149,7 @@ ninfo cpu --json
                                  "ipv6": "::1", "mac": "00:00:00:00:00:00",
                                  "loopback": true, "up": true } ],
                "default_gateway": "10.0.0.1" },
-  "processes": { "total": 214, "running": 2, "sleeping": 180, "zombie": 0 }
+  "processes": { "total": 214, "running": 3, "sleeping": 148, "zombie": 0 }
 }
 ```
 
