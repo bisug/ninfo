@@ -1,0 +1,6 @@
+nimcache/
+*.o
+/ninfo
+bin/
+dist/
+*.exe
