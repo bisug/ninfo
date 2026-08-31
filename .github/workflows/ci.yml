@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        nim: [stable]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nim
+        uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: ${{ matrix.nim }}
+
+      - name: Show versions
+        run: nim --version && nimble --version
+
+      - name: Build
+        run: nimble build --verbose
+
+      - name: Unit tests
+        run: nimble test
+
+      - name: Integration tests
+        run: nimble integration
+
+      - name: Verify binary runs
+        run: |
+          ./bin/ninfo --version
+          ./bin/ninfo --no-color system
+          ./bin/ninfo memory --json
