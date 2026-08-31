@@ -5,4 +5,4 @@ bin/
 dist/
 *.exe
 /tests/unit/test_*
-!*.nim
+/tests/integration/test_cli
