@@ -10,12 +10,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        nim: [stable]
+        nim: ['2.2.4', stable]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Nim
+      - name: Install Nim ${{ matrix.nim }}
         uses: jiro4989/setup-nim-action@v2
         with:
           nim-version: ${{ matrix.nim }}
@@ -23,8 +24,8 @@ jobs:
       - name: Show versions
         run: nim --version && nimble --version
 
-      - name: Build
-        run: nimble build --verbose
+      - name: Build (release)
+        run: nimble build
 
       - name: Unit tests
         run: nimble test
@@ -37,3 +38,22 @@ jobs:
           ./bin/ninfo --version
           ./bin/ninfo --no-color system
           ./bin/ninfo memory --json
+
+      - name: Check for compiler warnings
+        run: |
+          # Rebuild with warnings visible; fail if the project itself
+          # (not the stdlib) emits any.
+          nim c --verbosity:2 --hints:off -o:/tmp/ninfo-warncheck src/ninfo.nim 2>&1 \
+            | tee /tmp/warnings.log \
+            | grep -E "^$(pwd)/src/.*Warning" && {
+              echo "::error::Project compiler warnings found"
+              exit 1
+            } || echo "No project warnings"
+
+      - name: Upload warnings log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warnings-${{ matrix.nim }}
+          path: /tmp/warnings.log
+          if-no-files-found: ignore
