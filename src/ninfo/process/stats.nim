@@ -31,10 +31,13 @@ proc collectProcesses*(): ProcessInfo =
   for kind, name in walkDir("/proc"):
     if kind != pcDir:
       continue
-    if not name.allCharsInSet(Digits):
+    # walkDir yields full paths like "/proc/123"; keep only the numeric
+    # directory names (one per process).
+    let base = name.splitPath().tail
+    if base.len == 0 or not base.allCharsInSet(Digits):
       continue
     try:
-      statLines.add(readFile("/proc/" & name & "/stat"))
+      statLines.add(readFile("/proc/" & base & "/stat"))
     except IOError, OSError:
       # Process may have exited between walkDir and read - skip it.
       discard

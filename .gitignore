@@ -4,3 +4,5 @@ nimcache/
 bin/
 dist/
 *.exe
+/tests/unit/test_*
+!*.nim
