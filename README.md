@@ -21,6 +21,16 @@ privileges, and starts in milliseconds.
 
 ## Installation
 
+### One-line install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/bisug/ninfo/main/install.sh | bash
+```
+
+Installs to `~/.local/bin` (override with `--prefix DIR`). Builds from
+source when a Nim toolchain is present, otherwise downloads a release
+binary. Uninstall with `install.sh --uninstall`.
+
 ### From source
 
 Requires [Nim](https://nim-lang.org) 2.2 or later.
