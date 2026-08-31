@@ -27,9 +27,10 @@ proc unescapePath*(s: string): string =
     if s[i] == '\\' and i + 3 < s.len and s[i+1] == '0':
       try:
         let code = parseOctInt(s[i+1 .. i+3])
-        result.add(chr(code))
-        inc i, 4
-        continue
+        if code >= 0 and code <= 255:
+          result.add(chr(code.uint8))
+          inc i, 4
+          continue
       except ValueError:
         discard
     result.add(s[i])
