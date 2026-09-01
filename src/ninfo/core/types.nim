@@ -78,6 +78,28 @@ type
     ## All sensor readings, grouped by chip in sysfs order.
     readings*: seq[SensorReading]
 
+  BatteryInfo* = object
+    ## One battery, from /sys/class/power_supply/<name> with type=Battery.
+    ## Energy values are µWh, charge values µAh, voltage µV — all scaled
+    ## to Wh/Ah/V by the collector. None when the kernel does not report.
+    name*: string             ## e.g. "BAT1"
+    state*: Option[string]    ## "Charging" | "Discharging" | "Full" | ...
+    isPresent*: bool
+    capacityPercent*: Option[float]  ## Kernel-reported 0..100
+    capacityLevel*: Option[string]    ## "Full" | "High" | "Normal" | "Low" | "Critical"
+    voltageVolts*: Option[float]
+    energyNowWh*: Option[float]       ## Or charge-based when the battery reports µAh
+    energyFullWh*: Option[float]
+    energyDesignWh*: Option[float]
+    cycleCount*: Option[int]
+    ## Hours until empty/full; None when not discharging/charging or unknown.
+    hoursToEmpty*: Option[float]
+    hoursToFull*: Option[float]
+
+  BatteriesInfo* = object
+    ## All batteries found; empty on desktops — not an error.
+    batteries*: seq[BatteryInfo]
+
   NinfoError* = object of CatchableError
     ## Raised when a collector cannot gather data at all (as opposed to
     ## individual fields being unavailable, which are `Option.none`).
