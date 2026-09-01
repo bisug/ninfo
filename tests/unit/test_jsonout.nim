@@ -53,22 +53,22 @@ suite "renderJson determinism":
   test "same input produces identical output":
     let a = renderJson(sampleSystem(), sampleCpu(), sampleMem(), @[],
                        default(NetworkInfo), default(ProcessInfo),
-                       default(SensorsInfo), cmdAll)
+                       default(SensorsInfo), default(BatteriesInfo), cmdAll)
     let b = renderJson(sampleSystem(), sampleCpu(), sampleMem(), @[],
                        default(NetworkInfo), default(ProcessInfo),
-                       default(SensorsInfo), cmdAll)
+                       default(SensorsInfo), default(BatteriesInfo), cmdAll)
     check a == b
   test "cmdAll includes every section":
     let j = parseJson(renderJson(sampleSystem(), sampleCpu(), sampleMem(),
                                  @[], default(NetworkInfo),
                                  default(ProcessInfo), default(SensorsInfo),
-                                 cmdAll))
-    for key in ["system", "cpu", "memory", "storage", "network", "processes", "sensors"]:
+                                 default(BatteriesInfo), cmdAll))
+    for key in ["system", "cpu", "memory", "storage", "network", "processes", "sensors", "battery"]:
       check key in j
   test "cmdCpu output is cpu-only":
     let j = parseJson(renderJson(sampleSystem(), sampleCpu(), sampleMem(),
                                  @[], default(NetworkInfo),
                                  default(ProcessInfo), default(SensorsInfo),
-                                 cmdCpu))
+                                 default(BatteriesInfo), cmdCpu))
     check "model" in j
     check "os" notin j

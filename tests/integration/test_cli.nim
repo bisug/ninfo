@@ -15,7 +15,7 @@ suite "CLI integration":
   test "no arguments shows all sections":
     let (res, code) = runNinfo("--no-color")
     check code == 0
-    for section in ["System", "CPU", "Memory", "Storage", "Network", "Processes", "Sensors"]:
+    for section in ["System", "CPU", "Memory", "Storage", "Network", "Processes", "Sensors", "Battery"]:
       check section in res
 
   test "--version prints version":
@@ -96,6 +96,19 @@ suite "sensors output":
     check j{"chips"} != nil
     check j["chips"].kind == JObject
 
+suite "battery output":
+  test "battery section renders":
+    let (res, code) = runNinfo("--no-color battery")
+    check code == 0
+    check "Battery" in res
+    check "(no batteries)" in res or "State:" in res
+
+  test "battery json is an array":
+    let (res, code) = runNinfo("battery --json")
+    check code == 0
+    let j = parseJson(res)
+    check j.kind == JArray
+
 suite "JSON output":
   test "system json is valid and has expected keys":
     let (res, code) = runNinfo("system --json")
@@ -111,7 +124,7 @@ suite "JSON output":
     let (res, code) = runNinfo("--json")
     check code == 0
     let j = parseJson(res)
-    for key in ["system", "cpu", "memory", "storage", "network", "processes", "sensors"]:
+    for key in ["system", "cpu", "memory", "storage", "network", "processes", "sensors", "battery"]:
       check key in j
 
   test "json is deterministic across runs":
