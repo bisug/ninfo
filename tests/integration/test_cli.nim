@@ -15,7 +15,7 @@ suite "CLI integration":
   test "no arguments shows all sections":
     let (res, code) = runNinfo("--no-color")
     check code == 0
-    for section in ["System", "CPU", "Memory", "Storage", "Network", "Processes"]:
+    for section in ["System", "CPU", "Memory", "Storage", "Network", "Processes", "Sensors"]:
       check section in res
 
   test "--version prints version":
@@ -81,6 +81,21 @@ suite "command output":
     check code == 0
     check "Total:" in res
 
+suite "sensors output":
+  test "sensors section renders":
+    let (res, code) = runNinfo("--no-color sensors")
+    check code == 0
+    check "Sensors" in res
+    # Either readings or the explicit empty marker — never a crash.
+    check "(no sensors)" in res or "°C" in res or "V" in res or "RPM" in res
+
+  test "sensors json is valid with chips object":
+    let (res, code) = runNinfo("sensors --json")
+    check code == 0
+    let j = parseJson(res)
+    check j{"chips"} != nil
+    check j["chips"].kind == JObject
+
 suite "JSON output":
   test "system json is valid and has expected keys":
     let (res, code) = runNinfo("system --json")
@@ -96,7 +111,7 @@ suite "JSON output":
     let (res, code) = runNinfo("--json")
     check code == 0
     let j = parseJson(res)
-    for key in ["system", "cpu", "memory", "storage", "network", "processes"]:
+    for key in ["system", "cpu", "memory", "storage", "network", "processes", "sensors"]:
       check key in j
 
   test "json is deterministic across runs":

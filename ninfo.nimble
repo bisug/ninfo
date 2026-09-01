@@ -21,6 +21,7 @@ task test, "Run unit tests":
   exec "nim c --verbosity:0 --hints:off -r tests/unit/test_jsonout.nim"
   exec "nim c --verbosity:0 --hints:off -r tests/unit/test_system.nim"
   exec "nim c --verbosity:0 --hints:off -r tests/unit/test_cpu.nim"
+  exec "nim c --verbosity:0 --hints:off -r tests/unit/test_sensors.nim"
 
 # Run integration tests (requires the binary built first).
 task integration, "Run CLI integration tests":
