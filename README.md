@@ -1,11 +1,36 @@
 # ninfo
 
-A lightweight, fast and professional Linux system information CLI written in Nim.
+A Linux system information CLI with one job: **a whole-system snapshot as
+JSON in a single call**.
 
-`ninfo` collects system, CPU, memory, storage, network and process information
+```sh
+ninfo --json | jq '.memory.used_percent'
+```
+
+`ninfo` collects system, CPU, memory, storage, network and process data
 through native Linux interfaces (`/proc`, `/sys`, `uname(2)`, `statvfs(2)`,
 `getifaddrs(3)`) — it never shells out to external commands, needs no root
-privileges, and starts in milliseconds.
+privileges, and outputs one deterministic schema.
+
+## Why ninfo
+
+For a human-readable glance at one thing, the built-ins are better:
+`lscpu`, `free -h`, `df -h`, `ip addr`. Use those.
+
+ninfo earns its install when you want **everything, machine-readable, at
+once**:
+
+| Need | Built-ins | ninfo |
+|------|-----------|-------|
+| One field, human-readable | ✅ `free -h` | ❌ |
+| Whole system, pretty text | `fastfetch` | ❌ |
+| Whole system, one JSON call | 6+ calls, no JSON from `free`/`df`/`ps`, mixed schemas | ✅ |
+
+Typical users:
+
+- **Status bars / scripts** — one `jq` filter instead of parsing six text formats
+- **CI runners, provisioning** — snapshot machine state to a log or DB in one line
+- **Minimal systems** — single static binary, no Python (glances) or Node runtime
 
 ## Features
 
@@ -17,7 +42,7 @@ privileges, and starts in milliseconds.
 - **Processes** — total, running, sleeping and zombie counts
 - **Three output formats** — colored terminal, plain text, deterministic JSON
 - **No root required** — everything works as an unprivileged user
-- **No dependencies** — Nim standard library only
+- **No dependencies** — Nim standard library only, single static binary
 
 ## Installation
 
@@ -125,6 +150,12 @@ Use in a script:
 ```sh
 total=$(ninfo memory --json | jq -r '.total_bytes')
 echo "Total RAM: $total bytes"
+```
+
+Snapshot a whole machine to a file (the original use case):
+
+```sh
+ninfo --json > "snapshot-$(hostname)-$(date +%F).json"
 ```
 
 Pipe to a file without colors:
