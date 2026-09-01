@@ -58,6 +58,12 @@ proc filesystemJson*(fs: FilesystemInfo): JsonNode =
     "used_percent": optFloat(fs.usedPercent)
   }
 
+proc filesystemsJson*(fsList: seq[FilesystemInfo]): JsonNode =
+  ## The storage array, built once and shared by cmdStorage and cmdAll.
+  result = newJArray()
+  for fs in fsList:
+    result.add(filesystemJson(fs))
+
 proc networkJson*(net: NetworkInfo): JsonNode =
   var ifaces = newJArray()
   for iface in net.interfaces:
@@ -90,23 +96,16 @@ proc renderJson*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
   of cmdSystem: systemJson(sys).pretty()
   of cmdCpu: cpuJson(cpu).pretty()
   of cmdMemory: memoryJson(mem).pretty()
-  of cmdStorage:
-    var arr = newJArray()
-    for fs in fsList:
-      arr.add(filesystemJson(fs))
-    arr.pretty()
+  of cmdStorage: filesystemsJson(fsList).pretty()
   of cmdNetwork: networkJson(net).pretty()
   of cmdProcesses: processesJson(procs).pretty()
   else:
     # cmdAll: one object with every section.
-    var storageArr = newJArray()
-    for fs in fsList:
-      storageArr.add(filesystemJson(fs))
     let root = %* {
       "system": systemJson(sys),
       "cpu": cpuJson(cpu),
       "memory": memoryJson(mem),
-      "storage": storageArr,
+      "storage": filesystemsJson(fsList),
       "network": networkJson(net),
       "processes": processesJson(procs)
     }

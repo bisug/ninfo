@@ -24,7 +24,7 @@ proc parseOsRelease*(): Option[string] =
     try:
       for line in readFile(path).splitLines():
         if line.startsWith("PRETTY_NAME="):
-          return some(line["PRETTY_NAME=".len..^1].strip(chars = {'"'}))
+          return some(line["PRETTY_NAME=".len..^1].strip(chars = {'"', '\''}))
     except IOError, OSError:
       continue
   none(string)
@@ -50,6 +50,7 @@ proc collectSystem*(): SystemInfo =
     info.kernelVersion = cCharArrayToString(uts.release)
   else:
     info.architecture = "unknown"
+    info.kernelVersion = "unknown"
 
   # OS pretty name.
   info.osName = parseOsRelease().get("Linux")

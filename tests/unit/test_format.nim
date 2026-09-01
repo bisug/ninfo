@@ -35,7 +35,7 @@ suite "percentString":
   test "none":
     check percentString(none(float)) == "n/a"
   test "value":
-    check percentString(some(50.8)) == "39.7%"
+    check percentString(some(50.8)) == "50.8%"
   test "rounds to one decimal":
     check percentString(some(33.33333)) == "33.3%"
 

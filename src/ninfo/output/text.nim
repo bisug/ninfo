@@ -73,7 +73,6 @@ proc renderNetwork(p: Palette, net: NetworkInfo): string =
   result = section(p, "Network") & "\n"
   if net.interfaces.len == 0:
     result.add "  (no interfaces)\n"
-    return
   for iface in net.interfaces:
     var flags: seq[string] = @[]
     if iface.isUp: flags.add("up")
@@ -83,6 +82,8 @@ proc renderNetwork(p: Palette, net: NetworkInfo): string =
     result.add "    " & row(p, "IPv4", orNa(iface.ipv4)) & "\n"
     result.add "    " & row(p, "IPv6", orNa(iface.ipv6)) & "\n"
     result.add "    " & row(p, "MAC", orNa(iface.macAddress)) & "\n"
+  # Shown even when the interface list is empty: the gateway comes from
+  # /proc/net/route, which can be readable when getifaddrs fails.
   result.add "  " & row(p, "Default gateway", orNa(net.defaultGateway)) & "\n"
 
 proc renderProcesses(p: Palette, procs: ProcessInfo): string =

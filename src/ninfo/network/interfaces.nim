@@ -95,15 +95,13 @@ proc collectNetwork*(): NetworkInfo =
     return info
 
   # Aggregate addresses per interface name, preserving first-seen order.
-  # byName holds pointers into the sequence so updates need no copy.
-  var order: seq[string] = @[]
+  # byName maps interface name -> index into info.interfaces.
   var byName = initTable[string, int]()
 
   var cur = ifap
   while not cur.isNil:
     let name = $cur.ifa_name
     if name notin byName:
-      order.add(name)
       byName[name] = info.interfaces.len
       var iface: InterfaceInfo
       iface.name = name
@@ -124,6 +122,7 @@ proc collectNetwork*(): NetworkInfo =
 
   freeifaddrs(ifap)
 
-  for name in order:
-    info.interfaces[byName[name]].macAddress = macFromIfaddrs(name)
+  # info.interfaces is already in first-seen order; fill MACs in place.
+  for i in 0 ..< info.interfaces.len:
+    info.interfaces[i].macAddress = macFromIfaddrs(info.interfaces[i].name)
   info

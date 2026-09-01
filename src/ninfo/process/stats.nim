@@ -3,7 +3,7 @@
 ## Scans /proc for numeric directories (one per process) and reads each
 ## /proc/<pid>/stat to classify by state. No external commands.
 
-import std/[os, strutils, posix]
+import std/[os, strutils]
 import ../core/types
 
 proc classifyStates*(statLines: seq[string]): tuple[total, running, sleeping, zombie: int] =
