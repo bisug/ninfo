@@ -61,6 +61,23 @@ type
     sleeping*: int           ## Processes in S state.
     zombie*: int              ## Processes in Z state.
 
+  SensorReading* = object
+    ## One sensor value from a hwmon chip.
+    ## `label` is the kernel-provided label (e.g. "Core 0"); `kind` is
+    ## "temp", "fan", "in" (voltage), "curr" (current) or "power".
+    ## Numeric values are None when the chip does not expose them.
+    chip*: string            ## hwmon chip name, e.g. "coretemp"
+    kind*: string            ## "temp" | "fan" | "in" | "curr" | "power"
+    label*: Option[string]   ## e.g. "Package id 0"; None when no _label file
+    number*: int             ## Sensor index within the chip, e.g. 1 for temp1
+    value*: Option[float]    ## temp: deg C; fan: RPM; in: volts; curr: amps; power: watts
+    max*: Option[float]      ## _max threshold, same unit as value
+    critical*: Option[float] ## _crit threshold, same unit as value
+
+  SensorsInfo* = object
+    ## All sensor readings, grouped by chip in sysfs order.
+    readings*: seq[SensorReading]
+
   NinfoError* = object of CatchableError
     ## Raised when a collector cannot gather data at all (as opposed to
     ## individual fields being unavailable, which are `Option.none`).
