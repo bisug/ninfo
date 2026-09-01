@@ -19,6 +19,7 @@ type
     cmdStorage = "storage"
     cmdNetwork = "network"
     cmdProcesses = "processes"
+    cmdSensors = "sensors"
     cmdHelp = "help"
     cmdVersion = "version"
 
@@ -37,6 +38,7 @@ const commandNames*: Table[string, Command] = {
   "storage": cmdStorage,
   "network": cmdNetwork,
   "processes": cmdProcesses,
+  "sensors": cmdSensors,
   "help": cmdHelp,
   "version": cmdVersion,
 }.toTable
@@ -87,6 +89,7 @@ Commands:
   storage    Mounted filesystems and capacity
   network    Interfaces, addresses, default gateway
   processes  Process counts
+  sensors    Hardware temperatures, fans, voltages
   help       Show this help
   version    Show version
 

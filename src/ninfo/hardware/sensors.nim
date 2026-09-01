@@ -58,8 +58,11 @@ proc collectSensors*(): SensorsInfo =
   if not dirExists(hwmonRoot):
     return
 
+  # /sys/class/hwmon entries are symlinks into /sys/devices; accept both
+  # pcDir (real dir) and pcLinkToDir (sysfs symlink) so the walk works
+  # on either layout.
   for kind, dir in walkDir(hwmonRoot):
-    if kind != pcDir:
+    if kind != pcDir and kind != pcLinkToDir:
       continue
     let chipName =
       try:

@@ -3,7 +3,7 @@
 ## Pure presentation: takes already-collected data, produces a string.
 ## Never touches /proc or sysfs itself.
 
-import std/[strutils, options]
+import std/[strutils, options, sets]
 import ../core/types
 import ../cli/options
 import ../utils/format
@@ -93,10 +93,57 @@ proc renderProcesses(p: Palette, procs: ProcessInfo): string =
   result.add row(p, "Sleeping", $procs.sleeping) & "\n"
   result.add row(p, "Zombie", $procs.zombie) & "\n"
 
+proc sensorUnit(kind: string): string =
+  case kind
+  of "temp": "°C"
+  of "fan": "RPM"
+  of "in": "V"
+  of "curr": "A"
+  of "power": "W"
+  else: ""
+
+proc formatSensorValue(v: Option[float], kind: string): string =
+  ## One decimal for temps/currents, integers for fans, three for volts.
+  if v.isNone:
+    return "n/a"
+  let unit = sensorUnit(kind)
+  case kind
+  of "temp", "curr":
+    result = formatFloat(v.get, format = ffDecimal, precision = 1) & " " & unit
+  of "fan":
+    result = $int(v.get) & " " & unit
+  of "in":
+    result = formatFloat(v.get, format = ffDecimal, precision = 3) & " " & unit
+  else:
+    result = formatFloat(v.get, format = ffDecimal, precision = 2) & " " & unit
+
+proc renderSensors(p: Palette, sensors: SensorsInfo): string =
+  result = section(p, "Sensors") & "\n"
+  if sensors.readings.len == 0:
+    result.add "  (no sensors)\n"
+    return
+  # Group by chip, preserving first-seen order.
+  var order: seq[string] = @[]
+  var seen = initHashSet[string]()
+  for r in sensors.readings:
+    if r.chip notin seen:
+      seen.incl(r.chip)
+      order.add(r.chip)
+  for chip in order:
+    result.add "  " & section(p, chip) & "\n"
+    for r in sensors.readings:
+      if r.chip != chip:
+        continue
+      let name = r.label.get($r.kind & " " & $r.number)
+      var line = "    " & row(p, name, formatSensorValue(r.value, r.kind))
+      if r.critical.isSome:
+        line.add " (crit " & formatSensorValue(r.critical, r.kind) & ")"
+      result.add line & "\n"
+
 proc renderText*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
                  fsList: seq[FilesystemInfo], net: NetworkInfo,
-                 procs: ProcessInfo, command: Command,
-                 noColor: bool): string =
+                 procs: ProcessInfo, sensors: SensorsInfo,
+                 command: Command, noColor: bool): string =
   ## Render the requested command's view. For cmdAll, every section is
   ## included; for specific commands only the relevant section appears.
   let p = makePalette(noColor)
@@ -109,11 +156,13 @@ proc renderText*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
     parts.add(renderStorage(p, fsList))
     parts.add(renderNetwork(p, net))
     parts.add(renderProcesses(p, procs))
+    parts.add(renderSensors(p, sensors))
   of cmdSystem: parts.add(renderSystem(p, sys))
   of cmdCpu: parts.add(renderCpu(p, cpu))
   of cmdMemory: parts.add(renderMemory(p, mem))
   of cmdStorage: parts.add(renderStorage(p, fsList))
   of cmdNetwork: parts.add(renderNetwork(p, net))
   of cmdProcesses: parts.add(renderProcesses(p, procs))
+  of cmdSensors: parts.add(renderSensors(p, sensors))
   else: discard
   parts.join("\n").strip(leading = false)

@@ -6,6 +6,7 @@ import ../cli/options
 import ../system/collector
 import ../hardware/cpu
 import ../hardware/memory
+import ../hardware/sensors
 import ../storage/filesystems
 import ../network/interfaces
 import ../process/stats
@@ -17,36 +18,46 @@ const exitRuntime = 1
 const exitUsage = 2
 
 proc render(opts: CliOptions, sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
-            fs: seq[FilesystemInfo], net: NetworkInfo, procs: ProcessInfo): string =
+            fs: seq[FilesystemInfo], net: NetworkInfo, procs: ProcessInfo,
+            sensors: SensorsInfo): string =
   if opts.json:
-    renderJson(sys, cpu, mem, fs, net, procs, opts.command)
+    renderJson(sys, cpu, mem, fs, net, procs, sensors, opts.command)
   else:
-    renderText(sys, cpu, mem, fs, net, procs, opts.command, opts.noColor)
+    renderText(sys, cpu, mem, fs, net, procs, sensors, opts.command, opts.noColor)
 
 proc collectAndRender(opts: CliOptions): string =
   ## Collect only what the chosen command needs, then render.
   case opts.command
   of cmdSystem:
     render(opts, collectSystem(), default(CpuInfo), default(MemoryInfo),
-           @[], default(NetworkInfo), default(ProcessInfo))
+           @[], default(NetworkInfo), default(ProcessInfo),
+           default(SensorsInfo))
   of cmdCpu:
     render(opts, default(SystemInfo), collectCpu(), default(MemoryInfo),
-           @[], default(NetworkInfo), default(ProcessInfo))
+           @[], default(NetworkInfo), default(ProcessInfo),
+           default(SensorsInfo))
   of cmdMemory:
     render(opts, default(SystemInfo), default(CpuInfo), collectMemory(),
-           @[], default(NetworkInfo), default(ProcessInfo))
+           @[], default(NetworkInfo), default(ProcessInfo),
+           default(SensorsInfo))
   of cmdStorage:
     render(opts, default(SystemInfo), default(CpuInfo), default(MemoryInfo),
-           collectFilesystems(), default(NetworkInfo), default(ProcessInfo))
+           collectFilesystems(), default(NetworkInfo), default(ProcessInfo),
+           default(SensorsInfo))
   of cmdNetwork:
     render(opts, default(SystemInfo), default(CpuInfo), default(MemoryInfo),
-           @[], collectNetwork(), default(ProcessInfo))
+           @[], collectNetwork(), default(ProcessInfo),
+           default(SensorsInfo))
   of cmdProcesses:
     render(opts, default(SystemInfo), default(CpuInfo), default(MemoryInfo),
-           @[], default(NetworkInfo), collectProcesses())
+           @[], default(NetworkInfo), collectProcesses(), default(SensorsInfo))
+  of cmdSensors:
+    render(opts, default(SystemInfo), default(CpuInfo), default(MemoryInfo),
+           @[], default(NetworkInfo), default(ProcessInfo), collectSensors())
   else:
     render(opts, collectSystem(), collectCpu(), collectMemory(),
-           collectFilesystems(), collectNetwork(), collectProcesses())
+           collectFilesystems(), collectNetwork(), collectProcesses(),
+           collectSensors())
 
 proc ninfoMain*(args: seq[string] = commandLineParams()): int =
   ## Main entry. Returns the process exit code.

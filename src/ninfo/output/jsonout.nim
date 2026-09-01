@@ -88,9 +88,30 @@ proc processesJson*(procs: ProcessInfo): JsonNode =
     "zombie": procs.zombie
   }
 
+proc sensorReadingJson*(r: SensorReading): JsonNode =
+  %* {
+    "chip": r.chip,
+    "kind": r.kind,
+    "label": optString(r.label),
+    "number": r.number,
+    "value": optFloat(r.value),
+    "max": optFloat(r.max),
+    "critical": optFloat(r.critical)
+  }
+
+proc sensorsJson*(sensors: SensorsInfo): JsonNode =
+  ## Readings grouped by chip name, chips in sysfs order.
+  var chips = newJObject()
+  for r in sensors.readings:
+    if r.chip notin chips:
+      chips[r.chip] = newJArray()
+    chips[r.chip].add(sensorReadingJson(r))
+  %* { "chips": chips }
+
 proc renderJson*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
                  fsList: seq[FilesystemInfo], net: NetworkInfo,
-                 procs: ProcessInfo, command: Command): string =
+                 procs: ProcessInfo, sensors: SensorsInfo,
+                 command: Command): string =
   ## Render the requested command's data as JSON.
   case command
   of cmdSystem: systemJson(sys).pretty()
@@ -99,6 +120,7 @@ proc renderJson*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
   of cmdStorage: filesystemsJson(fsList).pretty()
   of cmdNetwork: networkJson(net).pretty()
   of cmdProcesses: processesJson(procs).pretty()
+  of cmdSensors: sensorsJson(sensors).pretty()
   else:
     # cmdAll: one object with every section.
     let root = %* {
@@ -107,6 +129,7 @@ proc renderJson*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
       "memory": memoryJson(mem),
       "storage": filesystemsJson(fsList),
       "network": networkJson(net),
-      "processes": processesJson(procs)
+      "processes": processesJson(procs),
+      "sensors": sensorsJson(sensors)
     }
     root.pretty()
