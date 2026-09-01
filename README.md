@@ -41,6 +41,7 @@ Typical users:
 - **Network** — interfaces, IPv4/IPv6/MAC addresses, default gateway
 - **Processes** — total, running, sleeping and zombie counts
 - **Sensors** — temperatures, fans, voltages from `/sys/class/hwmon`
+- **Battery** — charge, state, voltage, health from `/sys/class/power_supply`
 - **Three output formats** — colored terminal, plain text, deterministic JSON
 - **No root required** — everything works as an unprivileged user
 - **No dependencies** — Nim standard library only, single static binary
@@ -87,6 +88,7 @@ Commands:
   network    Interfaces, addresses, default gateway
   processes  Process counts
   sensors    Hardware temperatures, fans, voltages
+  battery    Battery charge, state and health
   help       Show this help
   version    Show version
 

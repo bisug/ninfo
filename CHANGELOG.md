@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `battery` command: charge percentage, state, voltage, energy
+  now/full/design and cycle count from
+  `/sys/class/power_supply` (type=Battery only). Handles both
+  energy-based (µWh) and charge-based (µAh) batteries, and computes
+  health as full/design capacity. Desktops without batteries report
+  an empty section, not an error.
 - `sensors` command: temperatures, fan speeds, voltages, currents and
   power draw from `/sys/class/hwmon` (the same source `lm-sensors`
   reads), with optional labels and max/critical thresholds. Included

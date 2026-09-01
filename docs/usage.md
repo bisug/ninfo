@@ -119,6 +119,23 @@ Machines without hwmon (containers, some VMs) print `(no sensors)`.
 Sensor kinds: `temp` (°C), `fan` (RPM), `in` (V), `curr` (A),
 `power` (W).
 
+### `ninfo battery`
+
+Battery state from `/sys/class/power_supply` — laptops only; desktops
+print `(no batteries)`. Health is full capacity as a fraction of
+design capacity (a worn battery reads below 100%).
+
+```
+Battery
+  BAT1
+    State: Full
+    Charge: 100.0%
+    Level: Full
+    Voltage: 12.86 V
+    Energy: 38.2 / 38.2 Wh
+    Health: 82.6%
+```
+
 ## Options
 
 | Option | Effect |
