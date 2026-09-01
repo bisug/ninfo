@@ -40,6 +40,7 @@ Typical users:
 - **Storage** — mounted filesystems with capacity and usage
 - **Network** — interfaces, IPv4/IPv6/MAC addresses, default gateway
 - **Processes** — total, running, sleeping and zombie counts
+- **Sensors** — temperatures, fans, voltages from `/sys/class/hwmon`
 - **Three output formats** — colored terminal, plain text, deterministic JSON
 - **No root required** — everything works as an unprivileged user
 - **No dependencies** — Nim standard library only, single static binary
@@ -85,6 +86,7 @@ Commands:
   storage    Mounted filesystems and capacity
   network    Interfaces, addresses, default gateway
   processes  Process counts
+  sensors    Hardware temperatures, fans, voltages
   help       Show this help
   version    Show version
 

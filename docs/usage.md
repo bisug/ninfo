@@ -99,6 +99,26 @@ Sleeping: 148
 Zombie: 0
 ```
 
+### `ninfo sensors`
+
+Hardware sensor readings from `/sys/class/hwmon` — the same source
+`lm-sensors` reads, without shelling out. Grouped by chip; each line
+shows the kernel label (or the sensor kind and number), the value in
+human units, and the critical threshold when the chip exposes one.
+
+```
+Sensors
+  coretemp
+    Package id 0: 63.0 °C (crit 105.0 °C)
+    Core 0: 63.0 °C (crit 105.0 °C)
+  acpitz
+    temp 1: 63.0 °C
+```
+
+Machines without hwmon (containers, some VMs) print `(no sensors)`.
+Sensor kinds: `temp` (°C), `fan` (RPM), `in` (V), `curr` (A),
+`power` (W).
+
 ## Options
 
 | Option | Effect |

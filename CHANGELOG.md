@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `sensors` command: temperatures, fan speeds, voltages, currents and
+  power draw from `/sys/class/hwmon` (the same source `lm-sensors`
+  reads), with optional labels and max/critical thresholds. Included
+  in `ninfo` (all) and `ninfo --json` output. Machines without hwmon
+  (containers, some VMs) report an empty section, not an error.
+
 ## [0.1.0] - 2026-08-31
 
 ### Added
