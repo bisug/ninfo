@@ -3,7 +3,7 @@
 ## Pure presentation: takes already-collected data, produces a string.
 ## Never touches /proc or sysfs itself.
 
-import std/[strutils, options, sets]
+import std/[strutils, options, sets, sequtils]
 import ../core/types
 import ../cli/options
 import ../utils/format
@@ -25,48 +25,68 @@ proc makePalette(noColor: bool): Palette =
 proc row(p: Palette, label, value: string): string =
   p.label & label & p.reset & ": " & value
 
+proc rowAligned(p: Palette, label, value: string, width = 14): string =
+  ## Label padded to a fixed column so values line up within a section.
+  p.label & alignLeft(label & ":", width) & p.reset & " " & value
+
 proc section(p: Palette, title: string): string =
   p.accent & title & p.reset
 
+proc maxLen(xs: seq[string]): int =
+  for x in xs:
+    if x.len > result: result = x.len
+
 proc renderSystem(p: Palette, sys: SystemInfo): string =
   result = section(p, "System") & "\n"
-  result.add row(p, "OS", sys.osName) & "\n"
-  result.add row(p, "Kernel", sys.kernelVersion) & "\n"
-  result.add row(p, "Architecture", sys.architecture) & "\n"
-  result.add row(p, "Hostname", sys.hostname) & "\n"
-  result.add row(p, "Uptime", humanUptime(sys.uptimeSeconds)) & "\n"
+  result.add rowAligned(p, "OS", sys.osName) & "\n"
+  result.add rowAligned(p, "Kernel", sys.kernelVersion) & "\n"
+  result.add rowAligned(p, "Architecture", sys.architecture) & "\n"
+  result.add rowAligned(p, "Hostname", sys.hostname) & "\n"
+  result.add rowAligned(p, "Uptime", humanUptime(sys.uptimeSeconds)) & "\n"
+
+proc formatMhz(mhz: Option[float]): string =
+  ## 2600.0 -> "2.6 GHz"; 950.0 -> "950 MHz".
+  if mhz.isNone:
+    return "n/a"
+  let v = mhz.get
+  if v >= 1000.0:
+    formatFloat(v / 1000.0, ffDecimal, 2) & " GHz"
+  else:
+    formatFloat(v, ffDecimal, 0) & " MHz"
 
 proc renderCpu(p: Palette, cpu: CpuInfo): string =
   result = section(p, "CPU") & "\n"
-  result.add row(p, "Model", orNa(cpu.modelName)) & "\n"
-  result.add row(p, "Physical cores", orNa(cpu.physicalCores)) & "\n"
-  result.add row(p, "Logical cores", orNa(cpu.logicalCores)) & "\n"
-  result.add row(p, "Frequency", orNa(cpu.mhz) & " MHz") & "\n"
+  result.add rowAligned(p, "Model", orNa(cpu.modelName)) & "\n"
+  result.add rowAligned(p, "Physical cores", orNa(cpu.physicalCores)) & "\n"
+  result.add rowAligned(p, "Logical cores", orNa(cpu.logicalCores)) & "\n"
+  result.add rowAligned(p, "Frequency", formatMhz(cpu.mhz)) & "\n"
 
 proc renderMemory(p: Palette, mem: MemoryInfo): string =
   result = section(p, "Memory") & "\n"
-  result.add row(p, "Total", orNa(mem.totalBytes)) & "\n"
-  result.add row(p, "Used", orNa(mem.usedBytes)) & "\n"
-  result.add row(p, "Available", orNa(mem.availableBytes)) & "\n"
-  result.add row(p, "Usage", percentString(mem.usedPercent)) & "\n"
+  result.add rowAligned(p, "Total", orNa(mem.totalBytes)) & "\n"
+  result.add rowAligned(p, "Used", orNa(mem.usedBytes)) & "\n"
+  result.add rowAligned(p, "Available", orNa(mem.availableBytes)) & "\n"
+  result.add rowAligned(p, "Usage", percentString(mem.usedPercent)) & "\n"
   if mem.swapTotalBytes.isSome:
-    result.add row(p, "Swap total", orNa(mem.swapTotalBytes)) & "\n"
-    result.add row(p, "Swap used", orNa(mem.swapUsedBytes)) & "\n"
+    result.add rowAligned(p, "Swap total", orNa(mem.swapTotalBytes)) & "\n"
+    result.add rowAligned(p, "Swap used", orNa(mem.swapUsedBytes)) & "\n"
 
 proc renderStorage(p: Palette, fsList: seq[FilesystemInfo]): string =
   result = section(p, "Storage") & "\n"
   if fsList.len == 0:
     result.add "  (no filesystems)\n"
     return
-  # Column layout, readable on narrow terminals.
-  let header = align("Filesystem", 16) & align("Size", 10) &
-               align("Used", 10) & align("Avail", 10) &
-               align("Use%", 6) & "  Mounted on"
+  # df-style table; device column sized to the widest entry.
+  let devWidth = max(10, maxLen(fsList.mapIt(it.device)))
+  let header = align("Filesystem", devWidth) & " " &
+               align("Size", 10) & align("Used", 10) &
+               align("Avail", 10) & align("Use%", 6) & "  Mounted on"
   result.add "  " & header & "\n"
   for fs in fsList:
     let usePct = if fs.usedPercent.isSome: $fs.usedPercent.get & "%" else: "n/a"
-    result.add "  " & align(fs.device, 16) & align(orNa(fs.totalBytes), 10) &
-      align(orNa(fs.usedBytes), 10) & align(orNa(fs.availableBytes), 10) &
+    result.add "  " & align(fs.device, devWidth) & " " &
+      align(orNa(fs.totalBytes), 10) & align(orNa(fs.usedBytes), 10) &
+      align(orNa(fs.availableBytes), 10) &
       align(usePct, 6) & "  " & fs.mountPoint & "\n"
 
 proc renderNetwork(p: Palette, net: NetworkInfo): string =
@@ -134,7 +154,9 @@ proc renderSensors(p: Palette, sensors: SensorsInfo): string =
     for r in sensors.readings:
       if r.chip != chip:
         continue
-      let name = r.label.get($r.kind & " " & $r.number)
+      # Label when the chip doesn't provide one: "temp1" style, matching
+      # how lm-sensors names unnamed inputs.
+      let name = r.label.get(r.kind & $r.number)
       var line = "    " & row(p, name, formatSensorValue(r.value, r.kind))
       if r.critical.isSome:
         line.add " (crit " & formatSensorValue(r.critical, r.kind) & ")"
@@ -153,7 +175,8 @@ proc renderBattery(p: Palette, bats: BatteriesInfo): string =
         formatFloat(b.capacityPercent.get, ffDecimal, 1) & "%") & "\n"
     else:
       result.add "    " & row(p, "Charge", "n/a") & "\n"
-    if b.capacityLevel.isSome:
+    if b.capacityLevel.isSome and b.capacityLevel.get != b.state.get(""):
+      # Skip "Level" when it just duplicates the state (e.g. both "Full").
       result.add "    " & row(p, "Level", b.capacityLevel.get) & "\n"
     if b.voltageVolts.isSome:
       result.add "    " & row(p, "Voltage",
