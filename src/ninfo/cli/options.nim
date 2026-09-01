@@ -20,6 +20,7 @@ type
     cmdNetwork = "network"
     cmdProcesses = "processes"
     cmdSensors = "sensors"
+    cmdBattery = "battery"
     cmdHelp = "help"
     cmdVersion = "version"
 
@@ -39,6 +40,7 @@ const commandNames*: Table[string, Command] = {
   "network": cmdNetwork,
   "processes": cmdProcesses,
   "sensors": cmdSensors,
+  "battery": cmdBattery,
   "help": cmdHelp,
   "version": cmdVersion,
 }.toTable
@@ -90,6 +92,7 @@ Commands:
   network    Interfaces, addresses, default gateway
   processes  Process counts
   sensors    Hardware temperatures, fans, voltages
+  battery    Battery charge, state and health
   help       Show this help
   version    Show version
 

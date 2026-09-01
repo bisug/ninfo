@@ -108,10 +108,31 @@ proc sensorsJson*(sensors: SensorsInfo): JsonNode =
     chips[r.chip].add(sensorReadingJson(r))
   %* { "chips": chips }
 
+proc batteryJson*(b: BatteryInfo): JsonNode =
+  %* {
+    "name": b.name,
+    "state": optString(b.state),
+    "present": b.isPresent,
+    "capacity_percent": optFloat(b.capacityPercent),
+    "capacity_level": optString(b.capacityLevel),
+    "voltage_volts": optFloat(b.voltageVolts),
+    "energy_now_wh": optFloat(b.energyNowWh),
+    "energy_full_wh": optFloat(b.energyFullWh),
+    "energy_design_wh": optFloat(b.energyDesignWh),
+    "cycle_count": optInt(b.cycleCount),
+    "hours_to_empty": optFloat(b.hoursToEmpty),
+    "hours_to_full": optFloat(b.hoursToFull)
+  }
+
+proc batteriesJson*(bats: BatteriesInfo): JsonNode =
+  result = newJArray()
+  for b in bats.batteries:
+    result.add(batteryJson(b))
+
 proc renderJson*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
                  fsList: seq[FilesystemInfo], net: NetworkInfo,
                  procs: ProcessInfo, sensors: SensorsInfo,
-                 command: Command): string =
+                 batteries: BatteriesInfo, command: Command): string =
   ## Render the requested command's data as JSON.
   case command
   of cmdSystem: systemJson(sys).pretty()
@@ -121,6 +142,7 @@ proc renderJson*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
   of cmdNetwork: networkJson(net).pretty()
   of cmdProcesses: processesJson(procs).pretty()
   of cmdSensors: sensorsJson(sensors).pretty()
+  of cmdBattery: batteriesJson(batteries).pretty()
   else:
     # cmdAll: one object with every section.
     let root = %* {
@@ -130,6 +152,7 @@ proc renderJson*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
       "storage": filesystemsJson(fsList),
       "network": networkJson(net),
       "processes": processesJson(procs),
-      "sensors": sensorsJson(sensors)
+      "sensors": sensorsJson(sensors),
+      "battery": batteriesJson(batteries)
     }
     root.pretty()

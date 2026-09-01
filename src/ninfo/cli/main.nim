@@ -7,6 +7,7 @@ import ../system/collector
 import ../hardware/cpu
 import ../hardware/memory
 import ../hardware/sensors
+import ../hardware/battery
 import ../storage/filesystems
 import ../network/interfaces
 import ../process/stats
@@ -19,11 +20,12 @@ const exitUsage = 2
 
 proc render(opts: CliOptions, sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
             fs: seq[FilesystemInfo], net: NetworkInfo, procs: ProcessInfo,
-            sensors: SensorsInfo): string =
+            sensors: SensorsInfo, batteries: BatteriesInfo): string =
   if opts.json:
-    renderJson(sys, cpu, mem, fs, net, procs, sensors, opts.command)
+    renderJson(sys, cpu, mem, fs, net, procs, sensors, batteries, opts.command)
   else:
-    renderText(sys, cpu, mem, fs, net, procs, sensors, opts.command, opts.noColor)
+    renderText(sys, cpu, mem, fs, net, procs, sensors, batteries,
+               opts.command, opts.noColor)
 
 proc collectAndRender(opts: CliOptions): string =
   ## Collect only what the chosen command needs, then render.
@@ -31,33 +33,39 @@ proc collectAndRender(opts: CliOptions): string =
   of cmdSystem:
     render(opts, collectSystem(), default(CpuInfo), default(MemoryInfo),
            @[], default(NetworkInfo), default(ProcessInfo),
-           default(SensorsInfo))
+           default(SensorsInfo), default(BatteriesInfo))
   of cmdCpu:
     render(opts, default(SystemInfo), collectCpu(), default(MemoryInfo),
            @[], default(NetworkInfo), default(ProcessInfo),
-           default(SensorsInfo))
+           default(SensorsInfo), default(BatteriesInfo))
   of cmdMemory:
     render(opts, default(SystemInfo), default(CpuInfo), collectMemory(),
            @[], default(NetworkInfo), default(ProcessInfo),
-           default(SensorsInfo))
+           default(SensorsInfo), default(BatteriesInfo))
   of cmdStorage:
     render(opts, default(SystemInfo), default(CpuInfo), default(MemoryInfo),
            collectFilesystems(), default(NetworkInfo), default(ProcessInfo),
-           default(SensorsInfo))
+           default(SensorsInfo), default(BatteriesInfo))
   of cmdNetwork:
     render(opts, default(SystemInfo), default(CpuInfo), default(MemoryInfo),
            @[], collectNetwork(), default(ProcessInfo),
-           default(SensorsInfo))
+           default(SensorsInfo), default(BatteriesInfo))
   of cmdProcesses:
     render(opts, default(SystemInfo), default(CpuInfo), default(MemoryInfo),
-           @[], default(NetworkInfo), collectProcesses(), default(SensorsInfo))
+           @[], default(NetworkInfo), collectProcesses(),
+           default(SensorsInfo), default(BatteriesInfo))
   of cmdSensors:
     render(opts, default(SystemInfo), default(CpuInfo), default(MemoryInfo),
-           @[], default(NetworkInfo), default(ProcessInfo), collectSensors())
+           @[], default(NetworkInfo), default(ProcessInfo), collectSensors(),
+           default(BatteriesInfo))
+  of cmdBattery:
+    render(opts, default(SystemInfo), default(CpuInfo), default(MemoryInfo),
+           @[], default(NetworkInfo), default(ProcessInfo),
+           default(SensorsInfo), collectBatteries())
   else:
     render(opts, collectSystem(), collectCpu(), collectMemory(),
            collectFilesystems(), collectNetwork(), collectProcesses(),
-           collectSensors())
+           collectSensors(), collectBatteries())
 
 proc ninfoMain*(args: seq[string] = commandLineParams()): int =
   ## Main entry. Returns the process exit code.

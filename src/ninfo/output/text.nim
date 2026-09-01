@@ -140,10 +140,46 @@ proc renderSensors(p: Palette, sensors: SensorsInfo): string =
         line.add " (crit " & formatSensorValue(r.critical, r.kind) & ")"
       result.add line & "\n"
 
+proc renderBattery(p: Palette, bats: BatteriesInfo): string =
+  result = section(p, "Battery") & "\n"
+  if bats.batteries.len == 0:
+    result.add "  (no batteries)\n"
+    return
+  for b in bats.batteries:
+    result.add "  " & section(p, b.name) & "\n"
+    result.add "    " & row(p, "State", orNa(b.state)) & "\n"
+    if b.capacityPercent.isSome:
+      result.add "    " & row(p, "Charge",
+        formatFloat(b.capacityPercent.get, ffDecimal, 1) & "%") & "\n"
+    else:
+      result.add "    " & row(p, "Charge", "n/a") & "\n"
+    if b.capacityLevel.isSome:
+      result.add "    " & row(p, "Level", b.capacityLevel.get) & "\n"
+    if b.voltageVolts.isSome:
+      result.add "    " & row(p, "Voltage",
+        formatFloat(b.voltageVolts.get, ffDecimal, 2) & " V") & "\n"
+    if b.energyNowWh.isSome and b.energyFullWh.isSome:
+      result.add "    " & row(p, "Energy",
+        formatFloat(b.energyNowWh.get, ffDecimal, 1) & " / " &
+        formatFloat(b.energyFullWh.get, ffDecimal, 1) & " Wh") & "\n"
+    if b.energyDesignWh.isSome and b.energyFullWh.isSome and
+       b.energyDesignWh.get > 0:
+      # Health: full capacity as a fraction of design capacity.
+      let health = b.energyFullWh.get / b.energyDesignWh.get * 100.0
+      result.add "    " & row(p, "Health",
+        formatFloat(health, ffDecimal, 1) & "%") & "\n"
+    if b.hoursToEmpty.isSome:
+      result.add "    " & row(p, "Time to empty",
+        humanUptime(int(b.hoursToEmpty.get * 3600))) & "\n"
+    if b.hoursToFull.isSome:
+      result.add "    " & row(p, "Time to full",
+        humanUptime(int(b.hoursToFull.get * 3600))) & "\n"
+
 proc renderText*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
                  fsList: seq[FilesystemInfo], net: NetworkInfo,
                  procs: ProcessInfo, sensors: SensorsInfo,
-                 command: Command, noColor: bool): string =
+                 batteries: BatteriesInfo, command: Command,
+                 noColor: bool): string =
   ## Render the requested command's view. For cmdAll, every section is
   ## included; for specific commands only the relevant section appears.
   let p = makePalette(noColor)
@@ -157,6 +193,7 @@ proc renderText*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
     parts.add(renderNetwork(p, net))
     parts.add(renderProcesses(p, procs))
     parts.add(renderSensors(p, sensors))
+    parts.add(renderBattery(p, batteries))
   of cmdSystem: parts.add(renderSystem(p, sys))
   of cmdCpu: parts.add(renderCpu(p, cpu))
   of cmdMemory: parts.add(renderMemory(p, mem))
@@ -164,5 +201,6 @@ proc renderText*(sys: SystemInfo, cpu: CpuInfo, mem: MemoryInfo,
   of cmdNetwork: parts.add(renderNetwork(p, net))
   of cmdProcesses: parts.add(renderProcesses(p, procs))
   of cmdSensors: parts.add(renderSensors(p, sensors))
+  of cmdBattery: parts.add(renderBattery(p, batteries))
   else: discard
   parts.join("\n").strip(leading = false)
