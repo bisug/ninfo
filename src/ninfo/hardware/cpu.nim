@@ -76,9 +76,12 @@ proc collectCpu*(): CpuInfo =
 
   info.physicalCores = countPhysicalCores()
 
-  # Frequency: prefer sysfs cpuinfo_max_freq (kHz), fall back to cpu MHz.
+  # Frequency: the current speed the kernel is running cpu0 at.
+  # scaling_cur_freq (kHz) is the live value on all cpufreq kernels;
+  # "cpu MHz" is the x86 equivalent. cpuinfo_max_freq is a spec, not a
+  # reading, so it is only a last-resort fallback.
   try:
-    let khz = readFile("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
+    let khz = readFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq")
       .strip().parseInt()
     info.mhz = some(khz.float / 1000.0)
   except IOError, OSError, ValueError:
@@ -86,5 +89,12 @@ proc collectCpu*(): CpuInfo =
       try:
         info.mhz = some(cpuinfo["cpu MHz"].parseFloat())
       except ValueError:
+        discard
+    else:
+      try:
+        let khz = readFile("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
+          .strip().parseInt()
+        info.mhz = some(khz.float / 1000.0)
+      except IOError, OSError, ValueError:
         discard
   info

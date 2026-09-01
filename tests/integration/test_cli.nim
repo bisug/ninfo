@@ -133,7 +133,12 @@ suite "JSON output":
     check codeA == 0
     check codeB == 0
     # Model and core counts are stable between two immediate runs.
-    check a == b
+    # mhz is the live frequency and may differ between the two runs.
+    let ja = parseJson(a)
+    let jb = parseJson(b)
+    check ja["model"] == jb["model"]
+    check ja["physical_cores"] == jb["physical_cores"]
+    check ja["logical_cores"] == jb["logical_cores"]
 
   test "storage json is an array":
     let (res, code) = runNinfo("storage --json")

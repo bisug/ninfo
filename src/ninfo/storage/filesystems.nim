@@ -93,6 +93,10 @@ proc collectFilesystems*(): seq[FilesystemInfo] =
       fs.totalBytes = some(total)
       fs.usedBytes = some(used)
       fs.availableBytes = some(avail)
-      if total > 0:
-        fs.usedPercent = some(round(used.float / total.float * 100.0, 1))
+      # df convention: used / (used + avail), excluding reserved blocks
+      # from the denominator so the percentage matches what users see
+      # in `df` and file managers.
+      let denom = used + avail
+      if denom > 0:
+        fs.usedPercent = some(round(used.float / denom.float * 100.0, 1))
     result.add(fs)
